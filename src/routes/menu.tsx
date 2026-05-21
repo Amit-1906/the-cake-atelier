@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Input } from "@/components/ui/input";
-import { products, categories } from "@/lib/products";
+import { products as localProducts, categories, type Product } from "@/lib/products";
+import { listCakes } from "@/lib/firebase/firestore";
+import { isFirebaseConfigured } from "@/lib/firebase/config";
 
 export const Route = createFileRoute("/menu")({
   component: MenuPage,
@@ -20,16 +22,37 @@ function MenuPage() {
   const [active, setActive] = useState<(typeof categories)[number]>("All");
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<"featured" | "low" | "high" | "rating">("featured");
+  const [items, setItems] = useState<Product[]>(localProducts);
+  const [source, setSource] = useState<"local" | "firestore">("local");
+
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const cakes = await listCakes();
+        if (!cancelled && cakes.length > 0) {
+          setItems(cakes as unknown as Product[]);
+          setSource("firestore");
+        }
+      } catch (e) {
+        console.warn("Firestore listCakes failed, using local catalog.", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filtered = useMemo(() => {
-    let list = products.filter(
+    let list = items.filter(
       (p) => (active === "All" || p.category === active) && p.name.toLowerCase().includes(q.toLowerCase()),
     );
     if (sort === "low") list = [...list].sort((a, b) => a.price - b.price);
     if (sort === "high") list = [...list].sort((a, b) => b.price - a.price);
     if (sort === "rating") list = [...list].sort((a, b) => b.rating - a.rating);
     return list;
-  }, [active, q, sort]);
+  }, [items, active, q, sort]);
 
   return (
     <SiteLayout>
@@ -37,7 +60,10 @@ function MenuPage() {
         <div className="text-center max-w-2xl mx-auto mb-10">
           <p className="text-xs uppercase tracking-[0.2em] text-primary">The Menu</p>
           <h1 className="mt-2 font-display text-5xl sm:text-6xl">Today at the atelier.</h1>
-          <p className="mt-4 text-muted-foreground">Hand-picked, hand-finished, never duplicated.</p>
+          <p className="mt-4 text-muted-foreground">
+            Hand-picked, hand-finished, never duplicated.
+            {source === "firestore" && <span className="ml-2 text-xs uppercase tracking-wider text-primary">· Live</span>}
+          </p>
         </div>
 
         <div className="glass-card rounded-3xl p-4 sm:p-5 flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
