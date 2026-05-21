@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
@@ -13,12 +13,11 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthGate() {
   const { user, loading, configured } = useAuth();
 
-  // Redirect once auth state resolves.
   useEffect(() => {
-    if (!configured) return;
-    if (!loading && !user && auth) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      redirect({ to: "/login", search: { redirect: window.location.pathname } });
+    if (!configured || loading) return;
+    if (!user && typeof window !== "undefined") {
+      const target = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      window.location.replace(target);
     }
   }, [loading, user, configured]);
 
@@ -44,17 +43,18 @@ function AuthGate() {
   }
 
   if (!user) {
-    if (typeof window !== "undefined") {
-      const target = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-      window.location.replace(target);
-    }
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
   }
 
   return <Outlet />;
 }
 
-// Belt-and-braces: also fire navigation as soon as state changes (e.g. signOut).
+// Keep auth listener warm in case nothing else has subscribed yet.
 if (typeof window !== "undefined" && auth) {
   onAuthStateChanged(auth, () => {});
 }
+
