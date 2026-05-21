@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { products } from "@/lib/products";
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
   head: () => ({ meta: [{ title: "Admin · Maison Velvet" }] }),
 });

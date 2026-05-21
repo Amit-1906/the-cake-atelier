@@ -5,7 +5,7 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { products } from "@/lib/products";
 
-export const Route = createFileRoute("/cart")({
+export const Route = createFileRoute("/_authenticated/cart")({
   component: CartPage,
   head: () => ({
     meta: [

@@ -1,7 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Menu, ShoppingBag, X } from "lucide-react";
+import { LogOut, Menu, ShoppingBag, User as UserIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/firebase/AuthContext";
+import { signOutUser } from "@/lib/firebase/auth";
+import { toast } from "sonner";
 
 const links = [
   { to: "/", label: "Home" },
@@ -16,6 +19,16 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { user } = useAuth();
+
+  async function handleLogout() {
+    try {
+      await signOutUser();
+      toast.success("Signed out");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Sign out failed");
+    }
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -65,11 +78,23 @@ export function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-2">
-            <Link to="/login">
-              <Button variant="ghost" size="sm" className="rounded-full">
-                Sign in
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <span className="hidden lg:inline-flex items-center gap-1.5 text-sm text-foreground/70 px-2">
+                  <UserIcon className="h-4 w-4" />
+                  {user.displayName || user.email}
+                </span>
+                <Button onClick={handleLogout} variant="ghost" size="sm" className="rounded-full gap-1">
+                  <LogOut className="h-4 w-4" /> Sign out
+                </Button>
+              </>
+            ) : (
+              <Link to="/login">
+                <Button variant="ghost" size="sm" className="rounded-full">
+                  Sign in
+                </Button>
+              </Link>
+            )}
             <Link to="/cart">
               <Button size="sm" className="rounded-full gap-2">
                 <ShoppingBag className="h-4 w-4" />
@@ -77,6 +102,7 @@ export function Navbar() {
               </Button>
             </Link>
           </div>
+
 
           <button
             className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-full glass"
