@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-export const Route = createFileRoute("/booking")({
+export const Route = createFileRoute("/_authenticated/booking")({
   component: BookingPage,
   head: () => ({
     meta: [
